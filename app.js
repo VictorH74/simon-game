@@ -1,12 +1,19 @@
 
 const buttons = ['blue', 'green', 'red', 'yellow'];
 
+const defaultVolume = 0.3;
+
 // Audios
 const blueAudio = new Audio("sounds/blue.mp3");
+blueAudio.volume = defaultVolume;
 const greenAudio = new Audio("sounds/green.mp3");
+greenAudio.volume = defaultVolume;
 const redAudio = new Audio("sounds/red.mp3");
+redAudio.volume = defaultVolume;
 const yellowAudio = new Audio("sounds/yellow.mp3");
+yellowAudio.volume = defaultVolume;
 const wrongAudio = new Audio("sounds/wrong.mp3");
+wrongAudio.volume = defaultVolume;
 
 const audios = {
     "blue": blueAudio,
