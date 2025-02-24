@@ -1,104 +1,146 @@
+const buttonColors = ["blue", "green", "red", "yellow"];
 
-const buttons = ['blue', 'green', 'red', 'yellow'];
+const defaultVolume = 0.3;
 
-// Audios
-const blueAudio = new Audio("sounds/blue.mp3");
-const greenAudio = new Audio("sounds/green.mp3");
-const redAudio = new Audio("sounds/red.mp3");
-const yellowAudio = new Audio("sounds/yellow.mp3");
-const wrongAudio = new Audio("sounds/wrong.mp3");
+const blueBtnSoundPath = "sounds/blue.mp3";
+const greenBtnSoundPath = "sounds/green.mp3";
+const redBtnSoundPath = "sounds/red.mp3";
+const yellowBtnSoundPath = "sounds/yellow.mp3";
+const wrongSoundPath = "sounds/wrong.mp3";
 
-const audios = {
-    "blue": blueAudio,
-    "green": greenAudio,
-    "red": redAudio,
-    "yellow": yellowAudio
+const audios = [
+  new Audio(blueBtnSoundPath),
+  new Audio(greenBtnSoundPath),
+  new Audio(redBtnSoundPath),
+  new Audio(yellowBtnSoundPath),
+  new Audio(wrongSoundPath),
+];
+
+for (const audio of audios) {
+  audio.preload = "auto";
 }
 
-var buttonsMemory = [];
-var index = 0;
+var buttonSequenceListMemory = [];
+var currentPressedBtnIndex = 0;
 var round = 1;
 var buttonsListened = false;
-var indexSequence = 0
+var sequenceIndex = 0;
 var interval;
 
 // COMEÇAR JOGO
-var title = $("#level-title")
-var listerTitle = title.on('click', function(){
-    start();
+var title = $("#level-title");
+var listerTitle = title.on("click", function () {
+  startGame();
 });
 
-
-// RESETAR VARIAVEIS
-function reset(){
-    index = 0;
-    round = 1;
-    buttonsMemory = [];
-    indexSequence = 0
-    clearInterval(interval);
+function resetGame() {
+  currentPressedBtnIndex = 0;
+  round = 1;
+  buttonSequenceListMemory = [];
+  sequenceIndex = 0;
+  clearInterval(interval);
 }
 
-// TOCAR SOM E ALTERAR COR DO BOTÃO SELECIONADO *Bug se o mesmo botão for clicado 2 vezes muito rapido*
-function playSound(buttonColor){
-    audios[buttonColor].play();
+function playSoundByColor(buttonColor) {
+  let sound;
 
-    $(`#${buttonColor}`).addClass("pressed");
-    setTimeout(()=>{ $(`#${buttonColor}`).removeClass("pressed");}, 300);
+  switch (buttonColor) {
+    case "blue":
+      sound = new Audio(blueBtnSoundPath);
+      break;
+    case "green":
+      sound = new Audio(greenBtnSoundPath);
+      break;
+    case "red":
+      sound = new Audio(redBtnSoundPath);
+      break;
+    case "yellow":
+      sound = new Audio(yellowBtnSoundPath);
+      break;
+  }
+
+  sound.volume = defaultVolume;
+  sound.play();
+
+  $(`#${buttonColor}`).addClass("pressed");
+  setTimeout(() => {
+    $(`#${buttonColor}`).removeClass("pressed");
+  }, 300);
 }
 
+function playSequence() {
+  playSoundByColor(buttonSequenceListMemory[sequenceIndex]);
+  sequenceIndex++;
 
-function playSequence(){
-    playSound(buttonsMemory[indexSequence]);
-    indexSequence++;
-
-    if(indexSequence === buttonsMemory.length){clearInterval(interval); indexSequence = 0}
+  if (sequenceIndex === buttonSequenceListMemory.length) finishSequence();
 }
 
-// ESCOLHER POSIÇÃO ALEATÓRIA DO ARRAY DE CORES PARA ARMAZENAR NO ARRAY 'buttonsMemory'
-function randomButton(){
+function getRandomButton() {
+  let randomButtonNumber = Math.floor(Math.random() * 4);
+  buttonSequenceListMemory.push(buttonColors[randomButtonNumber]);
 
-    let currentButtonNumber = Math.floor(Math.random() * 4);
-    buttonsMemory.push(buttons[currentButtonNumber]);
-
-    interval = setInterval(playSequence, 700);
+  interval = setInterval(playSequence, 700);
 }
 
-// VERIFICAR POSIÇÃO DO BOTÃO SELECIONADO COM A SEQUÊNCIA DE CORES DE BOTÕES NO ARRAY 'buttonsMemory'
-function btnPressed(){
-    if(this.className.split(' ')[1] === buttonsMemory[index]){
-        // JOGADOR ACERTOU A ORDEM
-        index += 1;
-        let btnPressed = this.className.split(' ')[1];
-        playSound(btnPressed);
-        if(index === buttonsMemory.length){
-            index = 0;
-            round += 1;
-            $('#level-title').text(`Round ${round}`);
-            setTimeout(randomButton, 800);
-        } 
-    }else{
-        // JOGADOR PERDEU
-        reset();
-        title.addClass("level-title-hr");
-        title.text(`Clique aqui para reiniciar`);
-        wrongAudio.play();
+function pressButton() {
+  const rightButton =
+    this.className.split(" ")[1] ===
+    buttonSequenceListMemory[currentPressedBtnIndex];
+  if (rightButton) {
+    currentPressedBtnIndex += 1;
+    const btnPressedColor = this.className.split(" ")[1];
+    playSoundByColor(btnPressedColor);
 
-        let body = $("body").addClass("game-over");
-        setTimeout(() => {
-            body.removeClass("game-over");
-        }, 300);
+    if (sequenceCompleted()) {
+      currentPressedBtnIndex = 0;
+      round += 1;
+      $("#level-title").text(`Round ${round}`);
+
+      startSequence();
     }
+  } else {
+    gameOver();
+  }
+}
+
+function startSequence() {
+  $(".btn").addClass("disabled");
+  setTimeout(getRandomButton, 800);
+}
+
+function finishSequence() {
+  $(".btn").removeClass("disabled");
+  clearInterval(interval);
+  sequenceIndex = 0;
+}
+
+function sequenceCompleted() {
+  return currentPressedBtnIndex === buttonSequenceListMemory.length;
+}
+
+function gameOver() {
+  resetGame();
+  title.addClass("level-title-hr");
+  title.text(`Clique aqui para reiniciar`);
+  const wrongAudio = new Audio(wrongSoundPath);
+  wrongAudio.volume = defaultVolume;
+  wrongAudio.play();
+
+  let body = $("body").addClass("game-over");
+  setTimeout(() => {
+    body.removeClass("game-over");
+  }, 300);
 }
 
 // INICIAR FUNÇÕES PARA RODAR O JOGO
-function start(){
-    reset();
-    title.text(`Round ${round}`);
-    title.removeClass("level-title-hr");
+function startGame() {
+  resetGame();
+  title.text(`Round ${round}`);
+  title.removeClass("level-title-hr");
 
-    if(buttonsListened === false){
-        $('.btn').on('click', btnPressed);
-        buttonsListened = true;
-    }
-    setTimeout(randomButton, 700);
+  if (buttonsListened === false) {
+    $(".btn").on("click", pressButton);
+    buttonsListened = true;
+  }
+  setTimeout(getRandomButton, 700);
 }
